@@ -1,0 +1,344 @@
+<html>
+
+<head>
+    <base href="." />
+    <title>Upload Page with Google Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(45deg, #ccc9cf, #760be0);
+        }
+
+        .upload-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .upload-area {
+            border: 2px dashed #8614f8;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            background: #f8f9fa;
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .google-btn {
+            width: 100%;
+            padding: 0.8rem;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            text-decoration: none;
+            /* Ensure the button text is not underlined */
+            color: inherit;
+            /* Inherit color from parent */
+        }
+
+        .google-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .google-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 0.8rem;
+            background: #8614f8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background: #0b40e0;
+        }
+
+        .file-list {
+            margin-top: 1rem;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .edit-btn {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .rename-input {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background: #8614f8;
+            transition: width 0.3s ease;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="upload-container">
+        <button class="google-btn" onclick="signInWithGoogle()"><a href="http://localhost:8080/auth/login">
+
+
+                Login with Google
+        </button></a>
+
+
+
+
+
+        <div class="upload-area" onclick="triggerFileInput()">
+            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#8614f8"
+                stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <h3>Drag & Drop files here</h3>
+            <p>or click to browse</p>
+        </div>
+        <input type="file" class="file-input" multiple onchange="handleFiles(this.files)">
+        <div class="file-list"></div>
+        <button class="upload-btn" onclick="uploadFiles()">Upload Files</button>
+
+
+
+
+
+    </div>
+
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script>
+        let fileStore = new Map(); // Store file objects
+
+        function initGoogle() {
+            gapi.load('auth2', function () {
+                gapi.auth2.init({
+                    client_id: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'
+                });
+            });
+        }
+
+        function signInWithGoogle() {
+            const auth2 = gapi.auth2.getAuthInstance();
+            auth2.signIn().then(function (googleUser) {
+                const profile = googleUser.getBasicProfile();
+                console.log('User signed in: ' + profile.getName());
+            }).catch(function (error) {
+                console.error('Error signing in:', error);
+            });
+        }
+
+        function triggerFileInput() {
+            document.querySelector('.file-input').click();
+        }
+
+        function handleFiles(files) {
+            const fileList = document.querySelector('.file-list');
+            fileList.innerHTML = '';
+
+            Array.from(files).forEach((file, index) => {
+                const fileId = Date.now() + '_' + index;
+                fileStore.set(fileId, file);
+
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.id = fileId;
+                fileItem.innerHTML = `
+                <div class="file-info">
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">(${formatFileSize(file.size)})</span>
+                </div>
+                <div class="file-actions">
+                    <button class="action-btn edit-btn" onclick="renameFile('${fileId}')">Rename</button>
+                    <button class="action-btn delete-btn" onclick="deleteFile('${fileId}')">Delete</button>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress"></div>
+                </div>
+            `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function renameFile(fileId) {
+            const fileItem = document.getElementById(fileId);
+            const fileNameElement = fileItem.querySelector('.file-name');
+            const currentName = fileNameElement.textContent;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'rename-input';
+            input.value = currentName;
+
+            const saveButton = document.createElement('button');
+            saveButton.className = 'action-btn edit-btn';
+            saveButton.textContent = 'Save';
+
+            fileNameElement.replaceWith(input);
+            input.focus();
+
+            saveButton.onclick = () => {
+                const newName = input.value.trim();
+                if (newName) {
+                    const file = fileStore.get(fileId);
+                    const newFile = new File([file], newName, { type: file.type });
+                    fileStore.set(fileId, newFile);
+                    fileNameElement.textContent = newName;
+                    input.replaceWith(fileNameElement);
+                    saveButton.remove();
+                }
+            };
+
+            fileItem.querySelector('.file-actions').prepend(saveButton);
+        }
+
+        function deleteFile(fileId) {
+            if (confirm('Are you sure you want to delete this file?')) {
+                fileStore.delete(fileId);
+                document.getElementById(fileId).remove();
+            }
+        }
+
+        function uploadFiles() {
+            if (fileStore.size === 0) {
+                alert('Please select files to upload');
+                return;
+            }
+
+            fileStore.forEach((file, fileId) => {
+                let progress = 0;
+                const progressBar = document.querySelector(`#${fileId} .progress`);
+
+                const interval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = progress + '%';
+
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        // Here you would typically handle the actual file upload to your server
+                    }
+                }, 200);
+            });
+        }
+
+        // Handle drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '#f0f0f0';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.background = 'white';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = 'white';
+            handleFiles(e.dataTransfer.files);
+        });
+
+        window.onload = initGoogle;
+    </script>
+</body>
+
+</html>
